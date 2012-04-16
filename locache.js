@@ -9,8 +9,6 @@
 //      with DOM Storage and proves a memcache inspired API for
 //      setting and retrieving values.
 
-//
-
 (function(){
 
     "use strict";
