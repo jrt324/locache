@@ -33,9 +33,7 @@ describe("asynclocal:", function(){
         var asynDone = false
 
         cache.set("my_string", "my_value").finished(function(){
-            console.log("set")
             cache.get("my_string").finished(function(result){
-                console.log("get")
                 expect(result).toBe("my_value")
                 expect(typeof result).toBe("string")
                 asynDone = true
