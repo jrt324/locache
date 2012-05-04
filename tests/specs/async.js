@@ -16,7 +16,7 @@ describe("asynclocal:", function(){
         var asynDone = false
         var cache = this.cache
 
-        cache.set("key", "value").finished(function(event){
+        cache.async.set("key", "value").finished(function(event){
             expect(cache.length()).toBe(1)
             asynDone = true
         });
@@ -32,8 +32,8 @@ describe("asynclocal:", function(){
         var cache = this.cache
         var asynDone = false
 
-        cache.set("my_string", "my_value").finished(function(){
-            cache.get("my_string").finished(function(result){
+        cache.async.set("my_string", "my_value").finished(function(){
+            cache.async.get("my_string").finished(function(result){
                 expect(result).toBe("my_value")
                 expect(typeof result).toBe("string")
                 asynDone = true

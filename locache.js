@@ -208,34 +208,13 @@
                 return window.localStorage.getItem(key)
             },
 
-            remove: function(key){
-                return window.localStorage.removeItem(key)
-            },
-
-            length: function(key){
-                return window.localStorage.length
-            },
-
-            key: function(index){
-                if (index < 0 || index >= this.length()){
-                    return
-                }
-                return window.localStorage.key(index)
-            },
-            enabled: function(){
-                return locache.supportsLocalStorage
-            }
-        },
-        // Wrapper around localStorage - persistent local storage in the
-        // browser.
-        asynclocal: {
-            set: function(key, value){
+            asyncSet: function(key, value){
                 return defer(function(){
                     return window.localStorage.setItem(key, value)
                 })
             },
 
-            get: function(key){
+            asyncGet: function(key){
                 return defer(function(){
                     return window.localStorage.getItem(key)
                 })
@@ -268,6 +247,18 @@
 
             get: function(key){
                 return window.sessionStorage.getItem(key)
+            },
+
+            asyncSet: function(key, value){
+                return defer(function(){
+                    return window.sessionStorage.setItem(key, value)
+                })
+            },
+
+            asyncGet: function(key){
+                return defer(function(){
+                    return window.sessionStorage.getItem(key)
+                })
             },
 
             remove: function(key){
@@ -388,6 +379,69 @@
         // If value isn't truthy, it must be an empty string or similar, so
         // just return that.
         return value
+
+    }
+
+    // The async object, provides an extra level to the namespace that
+    // contains all of the sync calls supports within locache.
+    LocacheCache.prototype.async = {
+
+        set: function(key, value, seconds){
+            // If the storage backend isn't supported or the key passed in is
+            // falsy, perform a no-op.
+            if (!this.storage.enabled() || !key) return
+
+            var expireKey = this.expirekey(key)
+            var valueKey = this.key(key)
+
+            if(seconds){
+                // The time stored is in milliseconds, but this function expects
+                // seconds, so multiply by 1000.
+                var ms = seconds * 1000
+                this.storage.set(expireKey, _currentTime() + ms)
+            }
+
+            // For the value, always convert it into a JSON object. THis means
+            // that we can safely store many types of objects. They still need to
+            // be serialisable so it still rules out some, such as functions.
+            value = JSON.stringify(value)
+            return this.storage.asyncSet(valueKey, value)
+        },
+
+        get: function(key){
+
+            // If the storage backend isn't supported or the key passed in is
+            // falsy, perform a no-op and return null.
+            if (!this.storage.enabled() || !key) return null
+
+            // If the value has expired, before returning null remove the key
+            // from the storage backend to free up the space.
+            if (this.hasExpired(key)){
+                this.remove(this.key(key))
+                return null
+            }
+
+            var valueKey = this.key(key)
+            var value = this.storage.asyncGet(valueKey)
+
+            // After we have the value back, check its truthy and then attempt to
+            // parse the JSON. If the JSON parsing fails, return null. This could
+            // be handled better but its hard to know what to do here? We only
+            // set JSON and thus we expect JSON but we don't want to delete
+            // values that must have come from another source.
+            if (value){
+                try{
+                    return JSON.parse(value)
+                } catch(err){
+                    return null
+                }
+            }
+
+            // If value isn't truthy, it must be an empty string or similar, so
+            // just return that.
+            return value
+
+        }
 
     }
 
